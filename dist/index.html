@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ChainPass - Decentralized Event Access</title>
+    <meta name="description" content="Decentralized event access system with NFT tickets" />
+    <!-- CSP to protect against unwanted script execution -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://relay.walletconnect.com wss://relay.walletconnect.com https://assets.reown.com https://sepolia.base.org https://base-mainnet.g.alchemy.com https://*.walletconnect.org https://*.walletconnect.com data:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';">
+    <!-- Protect window object from modifications by extensions -->
+    <script>
+      // Keep a reference to original console methods
+      window.__originalConsole = {
+        log: window.console.log,
+        error: window.console.error,
+        warn: window.console.warn
+      };
+
+      // Handle extension errors
+      window.addEventListener('error', function(event) {
+        if (event && event.filename && 
+            (event.filename.includes('multiVariateTestingCS') || 
+             event.message.includes('message port closed'))) {
+          event.preventDefault();
+          return false;
+        }
+      }, true);
+    </script>
+    <script type="module" crossorigin src="/assets/index-BEge5-cv.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BJwYJt8M.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html> 
