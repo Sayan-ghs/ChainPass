@@ -1,0 +1,50 @@
+{
+  "name": "chainpass",
+  "version": "1.0.0",
+  "description": "Decentralized event access system with NFT tickets",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "node hardhat-esm.js test",
+    "compile": "node hardhat-esm.js compile",
+    "deploy": "node hardhat-esm.js run scripts/deploy.ts --network baseSepolia",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "node": "node hardhat-esm.js node",
+    "start:local": "node hardhat-esm.js run scripts/deploy.ts --network localhost"
+  },
+  "dependencies": {
+    "@coinbase/onchainkit": "^0.1.6",
+    "@openzeppelin/contracts": "^5.0.0",
+    "@reown/walletkit": "^1.2.3",
+    "@tanstack/react-query": "^5.74.0",
+    "@walletconnect/core": "^2.19.2",
+    "@walletconnect/utils": "^2.19.2",
+    "autoprefixer": "^10.4.0",
+    "axios": "^1.6.0",
+    "ethers": "^6.7.0",
+    "postcss": "^8.4.0",
+    "qrcode.react": "^3.1.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.20.0",
+    "tailwindcss": "^3.3.0",
+    "viem": "^1.21.4",
+    "wagmi": "^1.4.13"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^3.0.0",
+    "@types/react": "^19.1.1",
+    "@vitejs/plugin-react": "^4.2.0",
+    "dotenv": "^16.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "hardhat": "^2.19.0",
+    "prettier": "^3.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0",
+    "vite-plugin-node-polyfills": "^0.23.0"
+  }
+}
