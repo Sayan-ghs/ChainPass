@@ -9,7 +9,6 @@ export const initWalletKit = async () => {
   }
 
   const core = new Core({
-<<<<<<< HEAD
     projectId: import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID || '0ac4eca2c22f98c8831f8f830c41fc2b',
     // Configure the core with proper expirer settings
     logger: 'error',
@@ -41,22 +40,6 @@ export const initWalletKit = async () => {
       core,
       metadata,
       storageOptions
-=======
-    projectId: import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID || '0ac4eca2c22f98c8831f8f830c41fc2b'
-  });
-
-  const metadata = {
-    name: 'My_first_web3',
-    description: 'AppKit Example',
-    url: window.location.origin, // Ensures it matches your domain & subdomain
-    icons: ['https://assets.reown.com/reown-profile-pic.png']
-  };
-
-  try {
-    walletKitInstance = await WalletKit.init({
-      core, // pass the shared 'core' instance
-      metadata
->>>>>>> ee039e47a9707604db9ec632d6f185c2eba420c0
     });
     
     return walletKitInstance;
