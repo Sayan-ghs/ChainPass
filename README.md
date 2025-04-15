@@ -2,7 +2,6 @@
 
 ChainPass is a full-stack decentralized event access system that allows users to mint NFT tickets, check-in to events, and claim rewards on the Base network.
 
-<<<<<<< HEAD
 ![ChainPass Logo](https://assets.reown.com/reown-profile-pic.png)
 
 ## Features
@@ -29,25 +28,6 @@ ChainPass is a full-stack decentralized event access system that allows users to
 - Base Sepolia testnet ETH (for testing)
 
 ## Installation
-=======
-## Features
-
-- Smart Wallet login using OnchainKit
-- NFT ticket minting (with soulbound option)
-- On-chain event check-in
-- Reward claiming (NFTs, tokens, POAPs)
-- Event organizer dashboard
-- Gasless transactions
-
-## Tech Stack
-
-- Frontend: React + Tailwind + Wagmi + Ethers
-- Smart Wallets: OnchainKit + Base
-- Backend/Contract: Solidity (EventManager, TicketNFT, CheckIn logic)
-- Storage: IPFS/Pinata for event metadata and NFT images
-
-## Setup
->>>>>>> ee039e47a9707604db9ec632d6f185c2eba420c0
 
 1. Clone the repository
 ```bash
@@ -60,7 +40,6 @@ cd chainpass
 npm install
 ```
 
-<<<<<<< HEAD
 3. Create a `.env` file by copying the example
 ```bash
 cp .env.example .env
@@ -77,7 +56,6 @@ WALLET_CONNECT_PROJECT_ID=your_walletconnect_project_id
 VITE_PUBLIC_ONCHAINKIT_API_KEY=your_onchainkit_api_key
 VITE_EVENT_MANAGER_ADDRESS=your_deployed_contract_address
 VITE_WALLET_CONNECT_PROJECT_ID=your_walletconnect_project_id
-=======
 3. Create a `.env` file
 ```bash
 cp .env.example .env
@@ -92,7 +70,6 @@ npm run compile
 5. Deploy contracts
 ```bash
 npm run deploy
->>>>>>> ee039e47a9707604db9ec632d6f185c2eba420c0
 ```
 
 ## Development
@@ -107,7 +84,6 @@ npm run dev
 npm test
 ```
 
-<<<<<<< HEAD
 3. Build for production
 ```bash
 npm run build
@@ -206,7 +182,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - The Base team for providing the blockchain infrastructure
 - WalletConnect for the wallet integration
 - OpenZeppelin for secure contract templates
-=======
 ## Smart Contract Architecture
 
 - `EventManager.sol`: Main contract for event creation and management
@@ -224,4 +199,3 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## License
 
 MIT 
->>>>>>> ee039e47a9707604db9ec632d6f185c2eba420c0
