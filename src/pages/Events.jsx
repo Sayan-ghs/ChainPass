@@ -7,12 +7,23 @@ function Events() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+<<<<<<< HEAD
   
   // Use a fixed maximum number to try instead of relying on getEventCount
   const MAX_EVENTS_TO_TRY = 10;
   
   // Generate contract calls for event IDs 1 through MAX_EVENTS_TO_TRY
   const contracts = Array.from({ length: MAX_EVENTS_TO_TRY }, (_, i) => ({
+=======
+
+  const { data: eventCount } = useContractRead({
+    address: import.meta.env.VITE_EVENT_MANAGER_ADDRESS,
+    abi: EventManagerABI,
+    functionName: 'getEventCount',
+  });
+
+  const contracts = Array.from({ length: eventCount || 0 }, (_, i) => ({
+>>>>>>> ee039e47a9707604db9ec632d6f185c2eba420c0
     address: import.meta.env.VITE_EVENT_MANAGER_ADDRESS,
     abi: EventManagerABI,
     functionName: 'getEvent',
@@ -28,11 +39,15 @@ function Events() {
 
     const eventsList = eventsData
       .map((result, index) => {
+<<<<<<< HEAD
         // Only include successful reads where the event exists
         // We can detect if an event exists by checking if it has a non-zero id or name
         if (result.status === 'success' && result.result && 
             result.result.id && result.result.id.toString() !== '0' && 
             result.result.name && result.result.name.length > 0) {
+=======
+        if (result.status === 'success' && result.result.isActive) {
+>>>>>>> ee039e47a9707604db9ec632d6f185c2eba420c0
           return {
             id: index + 1,
             ...result.result,

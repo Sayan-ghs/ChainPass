@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import React, { useEffect, useState } from 'react';
+=======
+import React, { useEffect } from 'react';
+>>>>>>> ee039e47a9707604db9ec632d6f185c2eba420c0
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { configureChains, createConfig, WagmiConfig } from 'wagmi';
 import { base, baseSepolia } from 'wagmi/chains';
@@ -20,6 +24,7 @@ import MyTickets from './pages/MyTickets';
 import CheckIn from './pages/CheckIn';
 
 // Create a client for React Query
+<<<<<<< HEAD
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -37,6 +42,9 @@ const queryClient = new QueryClient({
     }
   }
 });
+=======
+const queryClient = new QueryClient();
+>>>>>>> ee039e47a9707604db9ec632d6f185c2eba420c0
 
 // Configure chains & providers
 const { chains, publicClient, webSocketPublicClient } = configureChains(
@@ -44,6 +52,7 @@ const { chains, publicClient, webSocketPublicClient } = configureChains(
   [publicProvider()]
 );
 
+<<<<<<< HEAD
 // App metadata
 const appMetadata = {
   name: 'ChainPass',
@@ -52,6 +61,8 @@ const appMetadata = {
   icons: ['https://assets.reown.com/reown-profile-pic.png']
 };
 
+=======
+>>>>>>> ee039e47a9707604db9ec632d6f185c2eba420c0
 // Create connectors
 const connectors = [
   new InjectedConnector({
@@ -65,6 +76,7 @@ const connectors = [
   new WalletConnectConnector({
     chains,
     options: {
+<<<<<<< HEAD
       projectId: import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID || '0ac4eca2c22f98c8831f8f830c41fc2b',
       metadata: appMetadata,
       relayUrl: 'wss://relay.walletconnect.com',
@@ -75,13 +87,19 @@ const connectors = [
           clearOnInit: true
         }
       }
+=======
+      projectId: import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID || '0ac4eca2c22f98c8831f8f830c41fc2b'
+>>>>>>> ee039e47a9707604db9ec632d6f185c2eba420c0
     },
   }),
   new CoinbaseWalletConnector({
     chains,
     options: {
       appName: 'ChainPass',
+<<<<<<< HEAD
       appLogoUrl: appMetadata.icons[0]
+=======
+>>>>>>> ee039e47a9707604db9ec632d6f185c2eba420c0
     },
   }),
 ];
@@ -94,6 +112,7 @@ const config = createConfig({
   webSocketPublicClient,
 });
 
+<<<<<<< HEAD
 // Error boundary component to catch errors
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -157,22 +176,31 @@ function App() {
     };
   }, []);
 
+=======
+function App() {
+>>>>>>> ee039e47a9707604db9ec632d6f185c2eba420c0
   useEffect(() => {
     // Initialize WalletKit when the app loads
     const initializeWallet = async () => {
       try {
         await initWalletKit();
         console.log('WalletKit initialized successfully');
+<<<<<<< HEAD
         setAppInitialized(true);
       } catch (error) {
         console.error('Error initializing WalletKit:', error);
         setError(error);
+=======
+      } catch (error) {
+        console.error('Error initializing WalletKit:', error);
+>>>>>>> ee039e47a9707604db9ec632d6f185c2eba420c0
       }
     };
 
     initializeWallet();
   }, []);
 
+<<<<<<< HEAD
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 text-center p-4">
@@ -215,6 +243,28 @@ function App() {
         </QueryClientProvider>
       </WagmiConfig>
     </ErrorBoundary>
+=======
+  return (
+    <WagmiConfig config={config}>
+      <QueryClientProvider client={queryClient}>
+        <Router>
+          <div className="min-h-screen bg-gray-100">
+            <Navbar />
+            <main className="container mx-auto px-4 py-8">
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/events" element={<Events />} />
+                <Route path="/events/create" element={<CreateEvent />} />
+                <Route path="/events/:id" element={<EventDetails />} />
+                <Route path="/my-tickets" element={<MyTickets />} />
+                <Route path="/check-in/:eventId" element={<CheckIn />} />
+              </Routes>
+            </main>
+          </div>
+        </Router>
+      </QueryClientProvider>
+    </WagmiConfig>
+>>>>>>> ee039e47a9707604db9ec632d6f185c2eba420c0
   );
 }
 

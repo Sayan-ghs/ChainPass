@@ -103,10 +103,13 @@ contract EventManager is Ownable {
         return organizerEvents[organizer];
     }
 
+<<<<<<< HEAD
     function getEventCount() external view returns (uint256) {
         return _eventIds.current();
     }
 
+=======
+>>>>>>> ee039e47a9707604db9ec632d6f185c2eba420c0
     function toggleEventStatus(uint256 eventId) external {
         require(events[eventId].organizer == msg.sender, "Not the organizer");
         events[eventId].isActive = !events[eventId].isActive;
