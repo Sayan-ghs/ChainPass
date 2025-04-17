@@ -18,6 +18,8 @@ import CreateEvent from './pages/CreateEvent';
 import EventDetails from './pages/EventDetails';
 import MyTickets from './pages/MyTickets';
 import CheckIn from './pages/CheckIn';
+import EventTracker from './components/EventTracker';
+import EventHistory from './pages/EventHistory';
 
 // Create a client for React Query
 const queryClient = new QueryClient({
@@ -208,8 +210,10 @@ function App() {
                   <Route path="/events/:id" element={<EventDetails />} />
                   <Route path="/my-tickets" element={<MyTickets />} />
                   <Route path="/check-in/:eventId" element={<CheckIn />} />
+                  <Route path="/events/history" element={<EventHistory />} />
                 </Routes>
               </main>
+              <EventTracker />
             </div>
           </Router>
         </QueryClientProvider>

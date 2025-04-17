@@ -8,55 +8,122 @@ function MyTickets() {
   const { address } = useAccount();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const { data: ticketCount } = useContractRead({
+  // Get event count instead of ticket count
+  const { data: eventCount } = useContractRead({
     address: import.meta.env.VITE_EVENT_MANAGER_ADDRESS,
     abi: EventManagerABI,
-    functionName: 'getTicketCount',
-    args: [address],
+    functionName: 'getEventCount',
+    enabled: !!address,
   });
 
   useEffect(() => {
     const fetchTickets = async () => {
-      if (!ticketCount || !address) return;
-
-      const ticketsList = [];
-      for (let i = 0; i < ticketCount; i++) {
-        const ticketData = await readContract({
-          address: import.meta.env.VITE_EVENT_MANAGER_ADDRESS,
-          abi: EventManagerABI,
-          functionName: 'getTicketByIndex',
-          args: [address, i],
-        });
-
-        const eventData = await readContract({
-          address: import.meta.env.VITE_EVENT_MANAGER_ADDRESS,
-          abi: EventManagerABI,
-          functionName: 'getEvent',
-          args: [ticketData.eventId],
-        });
-
-        ticketsList.push({
-          id: i,
-          ...ticketData,
-          event: {
-            id: ticketData.eventId,
-            ...eventData,
-          },
-        });
+      if (!eventCount || !address) return;
+      
+      try {
+        setLoading(true);
+        const ticketsList = [];
+        
+        // Iterate through all events and check if user has tickets
+        for (let eventId = 1; eventId <= Number(eventCount); eventId++) {
+          try {
+            // Get event details
+            const eventData = await readContract({
+              address: import.meta.env.VITE_EVENT_MANAGER_ADDRESS,
+              abi: EventManagerABI,
+              functionName: 'getEvent',
+              args: [eventId],
+            });
+            
+            if (!eventData || !eventData.ticketContract) continue;
+            
+            // Check if user has a ticket for this event
+            // We'll use a basic ERC721 balanceOf call to the ticket contract
+            const TicketNFTABI = [
+              {
+                inputs: [{ internalType: 'address', name: 'owner', type: 'address' }],
+                name: 'balanceOf',
+                outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+                stateMutability: 'view',
+                type: 'function',
+              },
+              {
+                inputs: [{ internalType: 'address', name: 'user', type: 'address' }],
+                name: 'getTicketId',
+                outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+                stateMutability: 'view',
+                type: 'function',
+              },
+              {
+                inputs: [{ internalType: 'uint256', name: 'tokenId', type: 'uint256' }],
+                name: 'isTicketValid',
+                outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+                stateMutability: 'view',
+                type: 'function',
+              }
+            ];
+            
+            // Check if user has any tickets for this event
+            const balance = await readContract({
+              address: eventData.ticketContract,
+              abi: TicketNFTABI,
+              functionName: 'balanceOf',
+              args: [address],
+            });
+            
+            if (Number(balance) > 0) {
+              // Get the ticket ID for this user
+              const ticketId = await readContract({
+                address: eventData.ticketContract,
+                abi: TicketNFTABI,
+                functionName: 'getTicketId',
+                args: [address],
+              });
+              
+              // Check if ticket is valid
+              const isValid = await readContract({
+                address: eventData.ticketContract,
+                abi: TicketNFTABI,
+                functionName: 'isTicketValid',
+                args: [ticketId],
+              }).catch(() => false);
+              
+              // Add ticket to list
+              ticketsList.push({
+                id: Number(ticketId),
+                isUsed: !isValid,
+                eventId: eventId,
+                event: eventData,
+              });
+            }
+          } catch (err) {
+            console.error(`Error fetching event ${eventId}:`, err);
+            // Continue to next event
+          }
+        }
+        
+        setTickets(ticketsList);
+      } catch (err) {
+        console.error('Error fetching tickets:', err);
+        setError('Failed to load tickets. Please try again later.');
+      } finally {
+        setLoading(false);
       }
-
-      setTickets(ticketsList);
-      setLoading(false);
     };
 
-    fetchTickets();
-  }, [ticketCount, address]);
+    if (address) {
+      fetchTickets();
+    }
+  }, [eventCount, address]);
 
   if (!address) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">Please connect your wallet to view your tickets</div>
+        <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg">
+          <p className="text-yellow-700">Please connect your wallet to view your tickets</p>
+        </div>
       </div>
     );
   }
@@ -64,7 +131,26 @@ function MyTickets() {
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">Loading your tickets...</div>
+        <div className="text-center py-10">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+          <p>Loading your tickets...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+          <p className="text-red-700">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
@@ -74,7 +160,7 @@ function MyTickets() {
       <h1 className="text-3xl font-bold mb-8">My Tickets</h1>
 
       {tickets.length === 0 ? (
-        <div className="text-center py-8">
+        <div className="text-center py-8 bg-gray-50 rounded-lg p-8">
           <p className="text-gray-600 mb-4">You don't have any tickets yet</p>
           <Link
             to="/events"
@@ -103,15 +189,20 @@ function MyTickets() {
                 <div className="space-y-2">
                   <p className="text-sm">
                     <span className="font-medium">Date:</span>{' '}
-                    {new Date(ticket.event.startTime * 1000).toLocaleDateString()}
+                    {new Date(Number(ticket.event.startTime) * 1000).toLocaleDateString()}
                   </p>
                   <p className="text-sm">
                     <span className="font-medium">Time:</span>{' '}
-                    {new Date(ticket.event.startTime * 1000).toLocaleTimeString()}
+                    {new Date(Number(ticket.event.startTime) * 1000).toLocaleTimeString()}
                   </p>
                   <p className="text-sm">
                     <span className="font-medium">Ticket ID:</span> #{ticket.id}
                   </p>
+                  {ticket.isUsed && (
+                    <p className="text-sm text-orange-600 font-medium">
+                      ⚠️ This ticket has been used
+                    </p>
+                  )}
                 </div>
                 <Link
                   to={`/events/${ticket.event.id}`}

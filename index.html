@@ -7,7 +7,23 @@
     <title>ChainPass - Decentralized Event Access</title>
     <meta name="description" content="Decentralized event access system with NFT tickets" />
     <!-- CSP to protect against unwanted script execution -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://relay.walletconnect.com wss://relay.walletconnect.com https://assets.reown.com https://sepolia.base.org https://base-mainnet.g.alchemy.com https://*.walletconnect.org https://*.walletconnect.com data:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';">
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      connect-src 'self' https://*.walletconnect.org https://*.walletconnect.com wss://*.walletconnect.org wss://*.walletconnect.com 
+        https://relay.walletconnect.com wss://relay.walletconnect.com
+        https://assets.reown.com https://sepolia.base.org https://mainnet.base.org
+        https://base-mainnet.g.alchemy.com wss://www.walletlink.org/rpc
+        https://*.coinbase.com https://*.walletlink.org wss://*.walletlink.org;
+      img-src 'self' data: https: blob:;
+      script-src 'self' 'unsafe-inline' 'unsafe-eval';
+      style-src 'self' 'unsafe-inline';
+      font-src 'self' data:;
+      object-src 'none';
+      base-uri 'self';
+      form-action 'self';
+      frame-ancestors 'none';
+      frame-src 'self' https://*.walletconnect.com;
+    ">
     <!-- Protect window object from modifications by extensions -->
     <script>
       // Keep a reference to original console methods

@@ -72,6 +72,21 @@ npm run compile
 npm run deploy
 ```
 
+## How to Create an Event
+
+1. Navigate to the Create Event page in your application
+2. Fill in the event details:
+   - Event name and description
+   - Date and time
+   - Location
+   - Ticket price (in ETH)
+   - Total supply of tickets
+   - Upload an event image
+3. Click the "Create Event" button
+4. Confirm the transaction in your wallet when prompted
+5. Once the transaction is complete, navigate to the Events page
+6. Your new event should now appear in the list!
+
 ## Development
 
 1. Start the development server
