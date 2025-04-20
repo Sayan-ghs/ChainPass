@@ -56,6 +56,9 @@ function Navbar() {
                 <Link to="/events/create" className={`${isActive('/events/create')} py-5 px-1 transition-all duration-200`}>
                   Create Event
                 </Link>
+                <Link to="/events/history" className={`${isActive('/events/history')} py-5 px-1 transition-all duration-200`}>
+                  Event History
+                </Link>
               </>
             )}
             
@@ -107,6 +110,13 @@ function Navbar() {
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Create Event
+                  </Link>
+                  <Link 
+                    to="/events/history" 
+                    className={`${isActive('/events/history')} px-3 py-2 rounded-md transition-all duration-200`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Event History
                   </Link>
                 </>
               )}

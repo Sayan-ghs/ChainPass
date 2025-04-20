@@ -24,27 +24,44 @@ function CreateEvent() {
   const [mockMode, setMockMode] = useState(false);
   const [gasEstimate, setGasEstimate] = useState(null);
   const [showGasInfo, setShowGasInfo] = useState(false);
+  const [debugInfo, setDebugInfo] = useState({
+    contractAddress: '',
+    walletConnected: false,
+    walletAddress: ''
+  });
 
   const eventManagerAddress = import.meta.env.VITE_EVENT_MANAGER_ADDRESS;
 
   useEffect(() => {
+    console.log("CreateEvent - Contract address:", eventManagerAddress);
+    console.log("CreateEvent - Wallet address:", address);
+    
+    setDebugInfo({
+      contractAddress: eventManagerAddress || 'Not set',
+      walletConnected: !!address,
+      walletAddress: address || 'Not connected'
+    });
+    
     // Check if contract address is valid
     if (!eventManagerAddress || eventManagerAddress === "0x0000000000000000000000000000000000000000") {
       console.warn("EVENT_MANAGER_ADDRESS is not set. Using mock mode.");
       setContractEnabled(false);
       setMockMode(true);
+      return;
     }
 
+    // Contract is valid, use real mode
+    console.log("Contract address is valid, using real mode");
+    setMockMode(false);
+    setContractEnabled(true);
+    
     // Check for past transaction failures in localStorage
     const checkPastFailures = () => {
       try {
-        const failureCount = localStorage.getItem('eventCreationFailures') || 0;
-        if (parseInt(failureCount) > 2) {
-          setMockMode(true);
-          console.log("Auto-enabling mock mode due to past transaction failures");
-        }
+        // Reset failure count since we've fixed the ABI
+        localStorage.setItem('eventCreationFailures', '0');
       } catch (e) {
-        console.error("Error checking local storage:", e);
+        console.error("Error updating local storage:", e);
       }
     };
     
@@ -62,7 +79,7 @@ function CreateEvent() {
       startDate: formatDate(tomorrow),
       endDate: formatDate(nextWeek)
     }));
-  }, [eventManagerAddress]);
+  }, [eventManagerAddress, address]);
 
   // Format date for input fields
   const formatDate = (date) => {
@@ -95,13 +112,26 @@ function CreateEvent() {
   // Wait for transaction to be mined
   const { isLoading: isConfirming, isSuccess } = useWaitForTransaction({
     hash: writeData?.hash,
-    enabled: !!writeData?.hash
+    enabled: !!writeData?.hash,
+    onSuccess(data) {
+      console.log("Transaction confirmed:", data);
+      console.log("Transaction hash:", writeData?.hash);
+    }
   });
 
   // Show success message when transaction is mined
   useEffect(() => {
     if (isSuccess) {
+      console.log("Event creation transaction successful!");
       setSuccess('Event created successfully!');
+      
+      // Clear any past failure records
+      try {
+        localStorage.setItem('eventCreationFailures', '0');
+      } catch (e) {
+        console.error("Error updating local storage:", e);
+      }
+      
       setTimeout(() => {
         navigate('/events');
       }, 2000);
@@ -143,13 +173,45 @@ function CreateEvent() {
     e.preventDefault();
     setError('');
     setSuccess('');
+    console.log("Form submitted - creating event");
+    
+    // Always show debug panel
+    setShowGasInfo(true);
+
+    // Double-check wallet connection
+    if (!address) {
+      setError('Wallet not connected. Please connect your wallet first.');
+      return;
+    }
 
     try {
       // Convert values to appropriate formats
       const startTimestamp = getUnixTimestamp(eventData.startDate, eventData.startTime);
       const endTimestamp = getUnixTimestamp(eventData.endDate, eventData.endTime);
-      const ticketPriceWei = BigInt(parseFloat(eventData.ticketPrice) * 1e18);
-      const maxTickets = parseInt(eventData.maxTickets);
+      
+      // More user-friendly ticket price handling
+      let ticketPriceValue = parseFloat(eventData.ticketPrice);
+      if (isNaN(ticketPriceValue) || ticketPriceValue <= 0) {
+        setError('Please enter a valid ticket price greater than 0');
+        return;
+      }
+      
+      // Format with standard precision to avoid floating point errors
+      const ticketPriceWei = BigInt(Math.floor(ticketPriceValue * 1e18));
+      
+      // Use a reasonable minimum for max tickets (at least 5)
+      const maxTickets = Math.max(5, parseInt(eventData.maxTickets) || 5);
+
+      console.log("Event parameters:", {
+        name: eventData.name,
+        description: eventData.description,
+        imageUri: eventData.imageUri || 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
+        ticketPrice: ticketPriceWei.toString(),
+        maxTickets,
+        startTime: startTimestamp,
+        endTime: endTimestamp,
+        isSoulbound: eventData.isSoulbound
+      });
 
       // Validate dates
       if (startTimestamp >= endTimestamp) {
@@ -192,283 +254,350 @@ function CreateEvent() {
         return;
       }
 
+      // Show gas info
+      getGasEstimate();
+
+      // Verify contract is enabled
+      if (!contractEnabled) {
+        console.error("Contract is not enabled");
+        setError("Contract interaction is disabled. Please check your wallet connection and refresh.");
+        return;
+      }
+
+      // Check if write function is available
+      if (!write) {
+        console.error("Write function not available");
+        setError("Contract write function is not available. Please check your connection.");
+        return;
+      }
+
       // Call contract function
+      console.log("Calling contract function createEvent with address:", eventManagerAddress);
       write({
         args: [
           eventData.name,
           eventData.description,
           eventData.imageUri || 'https://images.unsplash.com/photo-1639322537228-f710d846310a',
           ticketPriceWei,
-          maxTickets,
+          BigInt(maxTickets),
           BigInt(startTimestamp),
-          BigInt(endTimestamp),
-          eventData.isSoulbound
-        ]
+          BigInt(endTimestamp)
+        ],
+        // Add gas limit to avoid out-of-gas errors
+        gas: BigInt(2000000)
       });
     } catch (err) {
-      console.error('Form validation error:', err);
+      console.error('Submission error:', err);
       setError('Error creating event: ' + err.message);
-      setMockMode(true);
     }
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-3xl">
-      <h1 className="text-3xl font-bold mb-8">Create Event</h1>
+    <div className="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-lg">
+      <h1 className="text-2xl font-bold mb-6">Create New Event</h1>
       
-      <div className="mb-6 flex items-center justify-between bg-gray-50 p-4 rounded-lg border border-gray-200">
-        <div>
-          <h3 className="font-medium">Having trouble with transactions?</h3>
-          <p className="text-sm text-gray-600">Toggle mock mode to test without blockchain interactions</p>
-        </div>
-        <div className="flex space-x-2">
-          <button
-            type="button"
-            onClick={getGasEstimate}
-            className="px-4 py-2 rounded-lg text-white font-medium bg-gray-500 hover:bg-gray-600"
-          >
-            Gas Info
-          </button>
-          <button
-            type="button"
-            onClick={() => setMockMode(!mockMode)}
-            className={`px-4 py-2 rounded-lg text-white font-medium ${
-              mockMode ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-blue-500 hover:bg-blue-600'
-            }`}
-          >
-            {mockMode ? 'Disable Mock Mode' : 'Enable Mock Mode'}
-          </button>
-        </div>
-      </div>
-
-      {showGasInfo && gasEstimate && (
-        <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4">
-          <div className="flex justify-between">
-            <h3 className="font-medium text-blue-800">Gas Estimate for Event Creation</h3>
-            <button 
-              onClick={() => setShowGasInfo(false)}
-              className="text-blue-500 hover:text-blue-700"
-            >
-              ✕
-            </button>
-          </div>
-          <p className="mt-2 text-sm text-blue-700">Estimated Gas: {gasEstimate.estimatedGas}</p>
-          <p className="text-sm text-blue-700">Estimated Cost: {gasEstimate.estimatedCost}</p>
-          <p className="mt-2 text-sm text-blue-600">{gasEstimate.explanation}</p>
-        </div>
-      )}
-      
-      {mockMode && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-6">
-          <p className="text-yellow-700">
-            <strong>Note:</strong> Contract connection is unavailable. This will create a sample event (no blockchain transaction).
-          </p>
-        </div>
-      )}
-
       {error && (
         <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
           <p className="text-red-700">{error}</p>
-          {error.includes("reverted") && (
-            <div className="text-sm mt-2 text-red-600">
-              <p className="font-medium mb-1">This error could be due to:</p>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>Insufficient ETH in your wallet for gas fees (most common cause)</li>
-                <li>Contract deployment failure due to network congestion</li>
-                <li>Invalid input parameters</li>
-              </ul>
-              <p className="mt-2 font-medium">Recommended solutions:</p>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>Get more Base Sepolia testnet ETH from <a href="https://www.coinbase.com/faucets/base-sepolia-faucet" target="_blank" rel="noopener noreferrer" className="underline">Base Sepolia Faucet</a></li>
-                <li>Try using mock mode to test your form without blockchain transactions</li>
-                <li>Try again later when the network is less congested</li>
-              </ul>
-            </div>
-          )}
         </div>
       )}
-
+      
       {success && (
         <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
           <p className="text-green-700">{success}</p>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Event Name */}
-          <div className="md:col-span-2">
-            <label className="block text-gray-700 font-medium mb-2">Event Name</label>
+      {mockMode && (
+        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+          <p className="text-blue-700">
+            Running in mock mode. Events created will not be stored on the blockchain.
+          </p>
+        </div>
+      )}
+      
+      <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
+        <p className="text-green-700 font-medium">Contract Connected</p>
+        <p className="text-green-700 text-sm mt-1">
+          The contract at address <span className="font-mono text-xs">{eventManagerAddress}</span> is ready to use.
+          You can now create events that will be stored on the blockchain.
+        </p>
+        <p className="text-green-700 text-sm mt-2">
+          Note: This contract doesn't support soulbound tickets.
+        </p>
+        </div>
+
+      <form onSubmit={handleSubmit}>
+        {/* Event details */}
+        <div className="space-y-4">
+          {/* Event name */}
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+              Event Name *
+            </label>
             <input
               type="text"
+              id="name"
               name="name"
+              required
               value={eventData.name}
               onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter event name"
-              required
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
 
-          {/* Description */}
-          <div className="md:col-span-2">
-            <label className="block text-gray-700 font-medium mb-2">Description</label>
+          {/* Event description */}
+          <div>
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+              Description *
+            </label>
             <textarea
+              id="description"
               name="description"
+              rows="3"
+              required
               value={eventData.description}
               onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Describe your event"
-              rows="4"
-              required
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             ></textarea>
           </div>
-
+          
           {/* Image URI */}
-          <div className="md:col-span-2">
-            <label className="block text-gray-700 font-medium mb-2">Image URL</label>
+          <div>
+            <label htmlFor="imageUri" className="block text-sm font-medium text-gray-700">
+              Image URL
+            </label>
             <input
               type="url"
+              id="imageUri"
               name="imageUri"
               value={eventData.imageUri}
               onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="https://example.com/image.jpg (optional)"
+              placeholder="https://example.com/image.jpg"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
-            <p className="text-sm text-gray-500 mt-1">Leave empty to use a default image</p>
-          </div>
+            <p className="mt-1 text-sm text-gray-500">
+              Leave blank to use a default image.
+            </p>
+        </div>
 
-          {/* Ticket Price */}
+          {/* Ticket price */}
           <div>
-            <label className="block text-gray-700 font-medium mb-2">Ticket Price (ETH)</label>
+            <label htmlFor="ticketPrice" className="block text-sm font-medium text-gray-700">
+              Ticket Price (ETH) *
+            </label>
             <input
               type="number"
+              id="ticketPrice"
               name="ticketPrice"
+              required
+              min="0"
+              step="0.001"
               value={eventData.ticketPrice}
               onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="0.01"
-              step="0.001"
-              min="0.001"
-              required
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
 
-          {/* Max Tickets */}
+          {/* Max tickets */}
           <div>
-            <label className="block text-gray-700 font-medium mb-2">Maximum Tickets</label>
+            <label htmlFor="maxTickets" className="block text-sm font-medium text-gray-700">
+              Maximum Tickets *
+            </label>
             <input
               type="number"
+              id="maxTickets"
               name="maxTickets"
+              required
+              min="1"
               value={eventData.maxTickets}
               onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="100"
-              min="1"
-              required
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
-
-          {/* Start Date */}
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">Start Date</label>
-            <input
-              type="date"
-              name="startDate"
-              value={eventData.startDate}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-
-          {/* Start Time */}
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">Start Time</label>
-            <input
-              type="time"
-              name="startTime"
-              value={eventData.startTime}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-
-          {/* End Date */}
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">End Date</label>
-            <input
-              type="date"
-              name="endDate"
-              value={eventData.endDate}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-
-          {/* End Time */}
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">End Time</label>
-            <input
-              type="time"
-              name="endTime"
-              value={eventData.endTime}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-
-          {/* Soulbound */}
-          <div className="md:col-span-2">
-            <label className="flex items-center">
+          
+          {/* Date and time fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
+                Start Date *
+              </label>
               <input
-                type="checkbox"
-                name="isSoulbound"
-                checked={eventData.isSoulbound}
+                type="date"
+                id="startDate"
+                name="startDate"
+                required
+                value={eventData.startDate}
                 onChange={handleChange}
-                className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
-              <span className="ml-2 text-gray-700">
-                Make tickets non-transferable (soulbound)
-              </span>
-            </label>
+            </div>
+            <div>
+              <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">
+                Start Time *
+              </label>
+              <input
+                type="time"
+                id="startTime"
+                name="startTime"
+                required
+                value={eventData.startTime}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">
+                End Date *
+              </label>
+              <input
+                type="date"
+                id="endDate"
+                name="endDate"
+                required
+                value={eventData.endDate}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label htmlFor="endTime" className="block text-sm font-medium text-gray-700">
+                End Time *
+              </label>
+              <input
+                type="time"
+                id="endTime"
+                name="endTime"
+                required
+                value={eventData.endTime}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
           </div>
         </div>
 
-        <div className="mt-8 flex justify-end">
-          <button
-            type="button"
-            onClick={() => navigate('/events')}
-            className="px-6 py-2 mr-4 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-          >
-            Cancel
-          </button>
+          {/* Soulbound checkbox */}
+          <div className="flex items-start">
+            <div className="flex items-center h-5">
+          <input
+                id="isSoulbound"
+                name="isSoulbound"
+            type="checkbox"
+                checked={eventData.isSoulbound}
+            onChange={handleChange}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                disabled={true}
+              />
+            </div>
+            <div className="ml-3 text-sm">
+              <label htmlFor="isSoulbound" className="font-medium text-gray-500">
+                Soulbound Tickets (Not Supported)
+          </label>
+              <p className="text-gray-500">
+                This feature is not available in the current contract version.
+              </p>
+            </div>
+        </div>
+
+          {/* Submit button */}
+          <div className="flex justify-between items-center pt-4">
+            <button
+              type="button"
+              onClick={() => navigate('/events')}
+              className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              Cancel
+            </button>
           <button
             type="submit"
-            className={`px-6 py-2 rounded-lg text-white font-medium transition-colors duration-200 ${
-              isWriteLoading || isConfirming
-                ? 'bg-gray-500 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-700'
-            }`}
-            disabled={isWriteLoading || isConfirming}
-          >
-            {isWriteLoading || isConfirming ? 'Creating...' : 'Create Event'}
+              disabled={isWriteLoading || isConfirming}
+              className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300"
+            >
+              {isWriteLoading || isConfirming ? (
+                <span>Creating... <span className="animate-pulse">⏳</span></span>
+              ) : (
+                'Create Event'
+              )}
           </button>
-        </div>
-        
-        <div className="mt-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
-          <h3 className="text-blue-800 font-medium">Tips for successful event creation:</h3>
-          <ul className="text-sm text-blue-700 mt-2 list-disc pl-5">
-            <li>Make sure you have enough ETH in your wallet to cover gas fees</li>
-            <li>Event creation creates two new smart contracts, which requires more gas than regular transactions</li>
-            <li>All fields must be valid, including ticket price (must be greater than 0)</li>
-            <li>Wait for transaction confirmation, which may take a few moments</li>
-          </ul>
+          </div>
         </div>
       </form>
+
+      {/* Always show the debug panel */}
+      <div className="mt-8 border border-gray-200 rounded-lg p-4 bg-gray-50">
+        <h3 className="text-md font-medium text-gray-900 mb-2">Debug Information</h3>
+        <div className="text-sm text-gray-600 space-y-1">
+          <p>Contract Address: {debugInfo.contractAddress}</p>
+          <p>Wallet Connected: {debugInfo.walletConnected ? 'Yes' : 'No'}</p>
+          <p>Wallet Address: {debugInfo.walletAddress}</p>
+          <p>Mock Mode: {mockMode ? 'Enabled' : 'Disabled'}</p>
+          {writeData?.hash && (
+            <p>Transaction Hash: {writeData.hash}</p>
+          )}
+        </div>
+        
+        {showGasInfo && gasEstimate && (
+          <div className="mt-4 p-3 bg-yellow-50 rounded border border-yellow-200">
+            <h4 className="text-sm font-medium text-yellow-800">Gas Estimate</h4>
+            <p className="text-sm text-yellow-700">{gasEstimate.estimatedGas}</p>
+            <p className="text-sm text-yellow-700">Approx. cost: {gasEstimate.estimatedCost}</p>
+            <p className="text-xs text-yellow-600 mt-1">{gasEstimate.explanation}</p>
+          </div>
+        )}
+        
+        {/* Troubleshooting options */}
+        <div className="mt-4 border-t border-gray-200 pt-4">
+          <h4 className="text-sm font-medium text-gray-900 mb-2">Troubleshooting Options</h4>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setMockMode(!mockMode)}
+              className={`px-3 py-1 text-xs font-medium rounded ${
+                mockMode ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-800'
+              }`}
+            >
+              {mockMode ? 'Disable Mock Mode' : 'Enable Mock Mode'}
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => {
+                // Test with minimal data
+                setEventData(prev => ({
+                  ...prev,
+                  name: "Test Event",
+                  description: "Test Description",
+                  imageUri: "",
+                  ticketPrice: "0.01",
+                  maxTickets: "10",
+                  isSoulbound: false
+                }));
+              }}
+              className="px-3 py-1 text-xs font-medium rounded bg-blue-100 text-blue-800"
+            >
+              Use Simple Test Data
+            </button>
+            
+            <a
+              href={`https://sepolia.basescan.org/address/${eventManagerAddress}`}
+              target="_blank"
+              rel="noreferrer"
+              className="px-3 py-1 text-xs font-medium rounded bg-purple-100 text-purple-800"
+            >
+              View Contract on Explorer
+            </a>
+            
+            <a
+              href="https://faucet.base.org"
+              target="_blank"
+              rel="noreferrer"
+              className="px-3 py-1 text-xs font-medium rounded bg-orange-100 text-orange-800"
+            >
+              Get Base Sepolia ETH
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

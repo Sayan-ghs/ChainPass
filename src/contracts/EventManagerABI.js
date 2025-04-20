@@ -77,12 +77,7 @@ export const EventManagerABI = [
         internalType: "uint256",
         name: "endTime",
         type: "uint256",
-      },
-      {
-        internalType: "bool",
-        name: "isSoulbound",
-        type: "bool",
-      },
+      }
     ],
     name: "createEvent",
     outputs: [
@@ -173,7 +168,7 @@ export const EventManagerABI = [
     inputs: [
       {
         internalType: "uint256",
-        name: "eventId",
+        name: "",
         type: "uint256",
       },
     ],
@@ -293,6 +288,19 @@ export const EventManagerABI = [
     name: "toggleEventStatus",
     outputs: [],
     stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "eventId",
+        type: "uint256",
+      },
+    ],
+    name: "buyTicket",
+    outputs: [],
+    stateMutability: "payable",
     type: "function",
   },
 ]; 
