@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 import WalletConnect from './WalletConnect';
+import NetworkInfo from './NetworkInfo';
 import { ChainPassLogoBase64 } from '../assets/chainpass-logo';
 
 function Navbar() {
@@ -70,7 +71,7 @@ function Navbar() {
           </div>
           
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-4">
             {menuItems.map(item => (
               (item.alwaysShow || (item.requiresAuth && isConnected)) && (
                 <Link 
@@ -90,7 +91,8 @@ function Navbar() {
               )
             ))}
             
-            <div className="ml-4">
+            {isConnected && <NetworkInfo />}
+            <div className="ml-2">
               <WalletConnect />
             </div>
           </div>
@@ -134,6 +136,11 @@ function Navbar() {
                   </Link>
                 )
               ))}
+              {isConnected && (
+                <div className="px-4 py-2">
+                  <NetworkInfo />
+                </div>
+              )}
               <div className="px-4 py-2">
                 <WalletConnect />
               </div>

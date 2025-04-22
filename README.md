@@ -2,7 +2,7 @@
 
 ChainPass is a full-stack decentralized event access system that allows users to mint NFT tickets, check-in to events, and claim rewards on the Base network.
 
-![ChainPass Logo](https://assets.reown.com/reown-profile-pic.png)
+![ChainPass Logo](dist\ChainPassLogo.jpg)
 
 ## Features
 

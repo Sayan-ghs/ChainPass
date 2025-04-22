@@ -13,6 +13,8 @@ import { ChainPassLogoBase64 } from './assets/chainpass-logo';
 
 // Components
 import Navbar from './components/Navbar';
+import NetworkBanner from './components/NetworkBanner';
+import NetworkCheck from './components/NetworkCheck';
 import Home from './pages/Home';
 import Events from './pages/Events';
 import CreateEvent from './pages/CreateEvent';
@@ -46,6 +48,11 @@ const { chains, publicClient, webSocketPublicClient } = configureChains(
   [base, baseSepolia],
   [publicProvider()]
 );
+
+// Log chain configuration
+console.log('Configuring chains with the following parameters:');
+console.log('- Base Sepolia (Testnet):', baseSepolia.id);
+console.log('- Base (Mainnet):', base.id);
 
 // App metadata
 const appMetadata = {
@@ -201,7 +208,9 @@ function App() {
       <WagmiConfig config={config}>
         <QueryClientProvider client={queryClient}>
           <Router>
+            <NetworkCheck />
             <div className="min-h-screen bg-gray-100">
+              <NetworkBanner />
               <Navbar />
               <main className="container mx-auto px-4 py-8">
                 <Routes>
