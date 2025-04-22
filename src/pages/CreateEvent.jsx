@@ -19,7 +19,8 @@ function CreateEvent() {
     isSoulbound: false
   });
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [contractEnabled, setContractEnabled] = useState(true);
   const [mockMode, setMockMode] = useState(false);
   const [gasEstimate, setGasEstimate] = useState(null);
@@ -27,8 +28,11 @@ function CreateEvent() {
   const [debugInfo, setDebugInfo] = useState({
     contractAddress: '',
     walletConnected: false,
-    walletAddress: ''
+    walletAddress: '',
+    isMockMode: false,
+    contractConnected: false
   });
+  const [isDebugMode, setIsDebugMode] = useState(true);
 
   const eventManagerAddress = import.meta.env.VITE_EVENT_MANAGER_ADDRESS;
 
@@ -39,7 +43,9 @@ function CreateEvent() {
     setDebugInfo({
       contractAddress: eventManagerAddress || 'Not set',
       walletConnected: !!address,
-      walletAddress: address || 'Not connected'
+      walletAddress: address || 'Not connected',
+      isMockMode: !eventManagerAddress || eventManagerAddress === "0x0000000000000000000000000000000000000000",
+      contractConnected: !!eventManagerAddress && eventManagerAddress !== "0x0000000000000000000000000000000000000000"
     });
     
     // Check if contract address is valid
@@ -292,6 +298,30 @@ function CreateEvent() {
     }
   };
 
+  // Debugging info in the modal
+  const getDebugInfo = () => {
+    return (
+      <>
+        <p className="text-sm text-gray-500 mt-2">Debug Information:</p>
+        <div className="text-xs text-gray-400 mt-1 font-mono bg-gray-100 p-2 rounded">
+          <p>Using mock mode: {mockMode ? 'Yes' : 'No'}</p>
+          <p>Contract connected: {debugInfo.contractConnected ? 'Yes' : 'No'}</p>
+          <p>Wallet connected: {debugInfo.walletConnected ? 'Yes' : 'No'}</p>
+        </div>
+        <div className="mt-2">
+          <a 
+            href={`https://sepolia.basescan.org`} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-xs text-blue-500 hover:underline"
+          >
+            View contract on BaseScan
+          </a>
+        </div>
+      </>
+    );
+  };
+
   return (
     <div className="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-lg">
       <h1 className="text-2xl font-bold mb-6">Create New Event</h1>
@@ -319,8 +349,7 @@ function CreateEvent() {
       <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
         <p className="text-green-700 font-medium">Contract Connected</p>
         <p className="text-green-700 text-sm mt-1">
-          The contract at address <span className="font-mono text-xs">{eventManagerAddress}</span> is ready to use.
-          You can now create events that will be stored on the blockchain.
+          The contract is ready to use. You can now create events that will be stored on the blockchain.
         </p>
         <p className="text-green-700 text-sm mt-2">
           Note: This contract doesn't support soulbound tickets.
@@ -468,7 +497,7 @@ function CreateEvent() {
                 type="time"
                 id="endTime"
                 name="endTime"
-                required
+              required
                 value={eventData.endTime}
                 onChange={handleChange}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
@@ -523,81 +552,43 @@ function CreateEvent() {
         </div>
       </form>
 
-      {/* Always show the debug panel */}
-      <div className="mt-8 border border-gray-200 rounded-lg p-4 bg-gray-50">
-        <h3 className="text-md font-medium text-gray-900 mb-2">Debug Information</h3>
-        <div className="text-sm text-gray-600 space-y-1">
-          <p>Contract Address: {debugInfo.contractAddress}</p>
-          <p>Wallet Connected: {debugInfo.walletConnected ? 'Yes' : 'No'}</p>
-          <p>Wallet Address: {debugInfo.walletAddress}</p>
-          <p>Mock Mode: {mockMode ? 'Enabled' : 'Disabled'}</p>
-          {writeData?.hash && (
-            <p>Transaction Hash: {writeData.hash}</p>
-          )}
-        </div>
-        
-        {showGasInfo && gasEstimate && (
-          <div className="mt-4 p-3 bg-yellow-50 rounded border border-yellow-200">
-            <h4 className="text-sm font-medium text-yellow-800">Gas Estimate</h4>
-            <p className="text-sm text-yellow-700">{gasEstimate.estimatedGas}</p>
-            <p className="text-sm text-yellow-700">Approx. cost: {gasEstimate.estimatedCost}</p>
-            <p className="text-xs text-yellow-600 mt-1">{gasEstimate.explanation}</p>
-          </div>
-        )}
-        
-        {/* Troubleshooting options */}
-        <div className="mt-4 border-t border-gray-200 pt-4">
-          <h4 className="text-sm font-medium text-gray-900 mb-2">Troubleshooting Options</h4>
-          <div className="flex flex-wrap gap-2">
+      {/* Debug Section */}
+      {isDebugMode && (
+        <div className="bg-gray-50 rounded-lg p-4 mt-8 border border-gray-200">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-gray-700 mb-2">Debug Information</h2>
             <button
-              type="button"
+              onClick={() => setIsDebugMode(false)}
+              className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 py-1 rounded"
+            >
+              Hide Debug Info
+            </button>
+          </div>
+          
+          {getDebugInfo()}
+          
+          <div className="mt-4 grid grid-cols-2 gap-4">
+            <button
               onClick={() => setMockMode(!mockMode)}
-              className={`px-3 py-1 text-xs font-medium rounded ${
-                mockMode ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-800'
+              className={`text-sm px-4 py-2 rounded ${
+                mockMode ? 'bg-yellow-500 hover:bg-yellow-600 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'
               }`}
             >
               {mockMode ? 'Disable Mock Mode' : 'Enable Mock Mode'}
             </button>
             
             <button
-              type="button"
               onClick={() => {
-                // Test with minimal data
-                setEventData(prev => ({
-                  ...prev,
-                  name: "Test Event",
-                  description: "Test Description",
-                  imageUri: "",
-                  ticketPrice: "0.01",
-                  maxTickets: "10",
-                  isSoulbound: false
-                }));
+                // Force refresh
+                window.location.reload();
               }}
-              className="px-3 py-1 text-xs font-medium rounded bg-blue-100 text-blue-800"
+              className="text-sm bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
             >
-              Use Simple Test Data
+              Refresh Page
             </button>
-            
-            <a
-              href={`https://sepolia.basescan.org/address/${eventManagerAddress}`}
-              target="_blank"
-              rel="noreferrer"
-              className="px-3 py-1 text-xs font-medium rounded bg-purple-100 text-purple-800"
-            >
-              View Contract on Explorer
-            </a>
-            
-            <a
-              href="https://faucet.base.org"
-              target="_blank"
-              rel="noreferrer"
-              className="px-3 py-1 text-xs font-medium rounded bg-orange-100 text-orange-800"
-            >
-              Get Base Sepolia ETH
-            </a>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

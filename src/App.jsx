@@ -9,6 +9,7 @@ import { WalletConnectConnector } from 'wagmi/connectors/walletConnect';
 import { CoinbaseWalletConnector } from 'wagmi/connectors/coinbaseWallet';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { initWalletKit } from './services/walletService';
+import { ChainPassLogoBase64 } from './assets/chainpass-logo';
 
 // Components
 import Navbar from './components/Navbar';
@@ -51,7 +52,7 @@ const appMetadata = {
   name: 'ChainPass',
   description: 'Decentralized event access system with NFT tickets',
   url: window.location.origin,
-  icons: ['https://assets.reown.com/reown-profile-pic.png']
+  icons: [ChainPassLogoBase64]
 };
 
 // Create connectors

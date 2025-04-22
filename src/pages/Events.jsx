@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useContractRead, useContractReads, useContractEvent, useAccount } from 'wagmi';
 import { EventManagerABI } from '../contracts/EventManagerABI';
+import EventSkeleton from '../components/EventSkeleton';
 
 // Mock events to display when no events are found from the contract
 const MOCK_EVENTS = [
@@ -305,7 +306,7 @@ function Events() {
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="px-4 py-2 border rounded-lg"
+              className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
             >
               <option value="all">All Events</option>
               <option value="upcoming">Upcoming</option>
@@ -315,13 +316,28 @@ function Events() {
             <button 
               onClick={handleRefresh} 
               disabled={loading || useMockData}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg disabled:bg-gray-300"
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg disabled:bg-gray-300 transition-colors duration-200 transform hover:scale-105 active:scale-95 flex items-center"
             >
-              {loading ? 'Loading...' : 'Refresh'}
+              {loading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Loading...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                  </svg>
+                  Refresh
+                </>
+              )}
             </button>
             <button
               onClick={() => forceMockMode(!useMockData)}
-              className={`px-4 py-2 rounded-lg text-white ${useMockData ? 'bg-green-500 hover:bg-green-600' : 'bg-yellow-500 hover:bg-yellow-600'}`}
+              className={`px-4 py-2 rounded-lg text-white transition-colors duration-200 transform hover:scale-105 active:scale-95 ${useMockData ? 'bg-green-500 hover:bg-green-600' : 'bg-yellow-500 hover:bg-yellow-600'}`}
             >
               {useMockData ? 'Use Real Data' : 'Use Mock Data'}
             </button>
@@ -329,10 +345,10 @@ function Events() {
         </div>
       </div>
 
-      <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
+      <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6 rounded-lg transform transition-all duration-300 hover:shadow-md">
         <p className="text-green-700 font-medium">Contract Connected</p>
         <p className="text-green-700 text-sm mt-1">
-          Connected to contract at address <span className="font-mono text-xs">{eventManagerAddress}</span>.
+          Connected to blockchain. 
           {eventCount > 0 ? 
             ` Found ${eventCount} events on the blockchain.` : 
             " No events found yet. Try creating an event!"}
@@ -347,11 +363,10 @@ function Events() {
       </div>
       
       {!useMockData && (
-        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-lg transform transition-all duration-300 hover:shadow-md">
           <div className="text-sm text-blue-700">
-            <p>Contract Address: {eventManagerAddress}</p>
+            <p>Contract Status: {debugInfo.contractConnected ? 'Connected' : 'Not Connected'}</p>
             <p>Event Count: {debugInfo.eventCount}</p>
-            <p>Contract Connected: {debugInfo.contractConnected ? 'Yes' : 'No'}</p>
             <p>Using Mock Data: {useMockData ? 'Yes' : 'No'}</p>
             {debugInfo.lastError && <p className="text-red-500">Error: {debugInfo.lastError}</p>}
           </div>
@@ -361,7 +376,7 @@ function Events() {
                 console.clear();
                 handleRefresh();
               }}
-              className="text-xs bg-blue-600 text-white px-2 py-1 rounded"
+              className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition-colors duration-200"
             >
               Clear Console & Refresh
             </button>
@@ -388,7 +403,7 @@ function Events() {
                   lastError: "Using placeholder data with real event IDs"
                 }));
               }}
-              className="text-xs bg-purple-600 text-white px-2 py-1 rounded"
+              className="text-xs bg-purple-600 text-white px-2 py-1 rounded hover:bg-purple-700 transition-colors duration-200"
             >
               Force Load Event IDs
             </button>
@@ -397,7 +412,11 @@ function Events() {
       )}
 
       {loading ? (
-        <div className="text-center py-8">Loading events...</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+          {[...Array(6)].map((_, index) => (
+            <EventSkeleton key={index} />
+          ))}
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredEvents.map((event, index) => {
@@ -410,35 +429,68 @@ function Events() {
               ? Number(event.totalTickets.toString())
               : Number(event.totalTickets || 0);
             
+            const startDate = new Date(typeof event.startTime === 'bigint' 
+              ? Number(event.startTime.toString()) * 1000 
+              : Number(event.startTime) * 1000);
+              
+            // Calculate if event is upcoming, active, or past
+            const now = new Date();
+            const eventStatus = startDate > now 
+              ? 'upcoming' 
+              : (new Date(Number(event.endTime) * 1000) < now ? 'past' : 'active');
+              
+            // Determine status badge
+            let statusBadge = null;
+            if (eventStatus === 'upcoming') {
+              statusBadge = <span className="absolute top-4 right-4 bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full">Upcoming</span>;
+            } else if (eventStatus === 'active') {
+              statusBadge = <span className="absolute top-4 right-4 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">Active</span>;
+            } else {
+              statusBadge = <span className="absolute top-4 right-4 bg-gray-500 text-white text-xs font-bold px-2 py-1 rounded-full">Past</span>;
+            }
+            
             return (
               <Link
                 key={event.id}
                 to={`/events/${event.id}`}
-                className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
+                className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 relative group"
               >
-                <img
-                  src={event.imageUri}
-                  alt={event.name}
-                  className="w-full h-48 object-cover"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = "https://images.unsplash.com/photo-1639322537228-f710d846310a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1332&q=80";
-                  }}
-                />
+                <div className="relative overflow-hidden">
+                  <img
+                    src={event.imageUri}
+                    alt={event.name}
+                    className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "https://images.unsplash.com/photo-1639322537228-f710d846310a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1332&q=80";
+                    }}
+                  />
+                  {statusBadge}
+                  <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                </div>
                 <div className="p-6">
-                  <h2 className="text-xl font-semibold mb-2">{event.name}</h2>
+                  <h2 className="text-xl font-semibold mb-2 group-hover:text-blue-600 transition-colors duration-300">{event.name}</h2>
                   <p className="text-gray-600 mb-4 line-clamp-2">
                     {event.description}
                   </p>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-500">
-                      {new Date(typeof event.startTime === 'bigint' 
-                        ? Number(event.startTime.toString()) * 1000 
-                        : Number(event.startTime) * 1000).toLocaleDateString()}
-                    </span>
-                    <span className="text-sm font-semibold">
-                      {ticketPriceFormatted} ETH
-                    </span>
+                    <div className="flex items-center space-x-1">
+                      <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-sm text-gray-500">
+                        {startDate.toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-sm font-semibold text-blue-600">
+                        {ticketPriceFormatted} ETH
+                      </span>
+                    </div>
                   </div>
                 </div>
               </Link>
@@ -448,11 +500,23 @@ function Events() {
       )}
 
       {!loading && filteredEvents.length === 0 && (
-        <div className="text-center py-8">
-          <p className="text-gray-600">No events found.</p>
-          <p className="text-sm text-gray-500 mt-2">
+        <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-200 animate-fadeIn">
+          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+          </svg>
+          <p className="text-gray-600 mt-4 text-lg font-medium">No events found.</p>
+          <p className="text-sm text-gray-500 mt-2 mb-6">
             Try creating a new event or check your contract connection.
           </p>
+          <Link
+            to="/events/create"
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+          >
+            <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v4h4a1 1 0 110 2h-4v4a1 1 0 11-2 0v-4H5a1 1 0 110-2h4V4a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            Create New Event
+          </Link>
         </div>
       )}
     </div>

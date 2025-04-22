@@ -90,8 +90,7 @@ function EventHistory() {
       <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
         <p className="text-green-700 font-medium">Contract Connected</p>
         <p className="text-green-700 text-sm mt-1">
-          Connected to contract at address <span className="font-mono text-xs">{eventManagerAddress}</span>.
-          Event history will update automatically when new events are created.
+          Connected to blockchain. Event history will update automatically when new events are created.
         </p>
       </div>
       
@@ -101,7 +100,7 @@ function EventHistory() {
             This page shows blockchain events detected during your session.
           </p>
           <p className="text-sm">
-            Contract address: {eventManagerAddress || "Not set"}
+            Status: {eventManagerAddress ? "Connected to blockchain" : "Not connected"}
           </p>
         </div>
       </div>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" fill="#edeef0" rx="10" ry="10" />
+  
+  <!-- ChainPass X icon -->
+  <g transform="translate(25, 25)">
+    <polygon fill="#5eb996" points="0,0 40,0 40,20 20,20 20,40 0,40" />
+    <polygon fill="#315b93" points="40,0 15,40 0,40 25,0" />
+    <polygon fill="#0f3644" points="0,0 50,50 30,50 0,30" />
+  </g>
+</svg> 
