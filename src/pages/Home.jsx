@@ -141,7 +141,7 @@ function Home() {
               
               <div className="flex justify-center">
                 <a 
-                  href="https://github.com/your-username/chainpass" 
+                  href="https://github.com/Sayan-ghs/ChainPass" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-800 hover:bg-gray-700 transition-colors duration-200"

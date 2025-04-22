@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { useContractRead, useContractWrite, useAccount } from 'wagmi';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ethers } from 'ethers';
+import { useAccount, useContractRead, useContractWrite, useWaitForTransaction } from 'wagmi';
+import TicketPreview from '../components/TicketPreview';
 import { EventManagerABI } from '../contracts/EventManagerABI';
 
 function EventDetails() {
@@ -87,16 +89,40 @@ function EventDetails() {
       setBuyingTicket(false);
       console.error('Transaction error:', writeError);
       
-      if (writeError.message && writeError.message.includes('insufficient funds')) {
+      // Check for different error types
+      const errorMessage = writeError.message || '';
+      
+      if (errorMessage.includes('insufficient funds')) {
         setInsufficientFunds(true);
         alert(
           'Insufficient funds for this purchase.\n\n' +
           `You need at least ${formatEth(event?.ticketPrice || 0)} ETH plus gas fees.\n\n` +
           'Please add more funds to your wallet and try again.'
         );
+      } else if (errorMessage.includes('user rejected transaction')) {
+        // User rejected in wallet - no need for alert
+        console.log('User rejected the transaction');
+      } else if (errorMessage.includes('transaction reverted')) {
+        // Contract reverted - try to provide a more specific reason
+        let reason = 'The transaction was reverted by the smart contract.';
+        
+        if (errorMessage.includes('sold out') || errorMessage.includes('maxTickets')) {
+          reason = 'This event is sold out. No more tickets are available.';
+        } else if (errorMessage.includes('already purchased') || errorMessage.includes('already has a ticket')) {
+          reason = 'You already have a ticket for this event.';
+        } else if (errorMessage.includes('event ended') || errorMessage.includes('not active')) {
+          reason = 'This event has ended or is not active.';
+        } else if (errorMessage.includes('incorrect amount') || errorMessage.includes('wrong amount') || errorMessage.includes('price')) {
+          reason = `The exact ticket price of ${formatEth(event?.ticketPrice || 0)} ETH must be sent.`;
+        }
+        
+        alert(`Transaction Failed: ${reason}\n\nFor testing purposes, you can use demo mode by adding ?demo=true to the URL.`);
+      } else {
+        // Default error message
+        alert(`Transaction failed: ${errorMessage}\n\nTry using demo mode for testing.`);
       }
     }
-  }, [isWriteSuccess, writeError]);
+  }, [isWriteSuccess, writeError, event]);
 
   const handleBuyTicket = async () => {
     if (!address) {
@@ -124,17 +150,28 @@ function EventDetails() {
         setBuyingTicket(true);
         console.log('DEMO MODE: Simulating ticket purchase success');
         
-        // Create a demo ticket
+        // Create a demo ticket with safe serialization of any BigInt values
         const demoTicket = {
           id: Math.floor(100000 + Math.random() * 900000), // Random 6-digit number
           isUsed: false,
           eventId: Number(id),
           event: {
             ...event,
-            id: Number(id)
+            id: Number(id),
+            // Convert BigInt values to strings to avoid JSON serialization issues
+            ticketPrice: typeof event.ticketPrice === 'bigint' ? event.ticketPrice.toString() : event.ticketPrice,
+            startTime: typeof event.startTime === 'bigint' ? Number(event.startTime.toString()) : event.startTime,
+            endTime: typeof event.endTime === 'bigint' ? Number(event.endTime.toString()) : event.endTime
           },
           purchasedAt: new Date().toISOString(),
           qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=DEMO-TICKET-${id}-${Date.now()}`
+        };
+        
+        // Helper function to safely serialize BigInt values in objects
+        const serializeBigInt = (obj) => {
+          return JSON.stringify(obj, (key, value) => 
+            typeof value === 'bigint' ? value.toString() : value
+          );
         };
         
         // Save to localStorage for persistence
@@ -143,7 +180,7 @@ function EventDetails() {
           : [];
         
         const updatedTickets = [...existingTickets, demoTicket];
-        localStorage.setItem('demoTickets', JSON.stringify(updatedTickets));
+        localStorage.setItem('demoTickets', serializeBigInt(updatedTickets));
         
         // Simulate transaction delay
         setTimeout(() => {
@@ -167,8 +204,19 @@ function EventDetails() {
       
       setBuyingTicket(true);
       
+      // Ensure we have the correct eventId and price values
+      const eventId = Number(id);
+      
+      // Log the transaction details for debugging
+      console.log('Executing contract call with:', {
+        eventId,
+        price: price.toString(),
+        address: import.meta.env.VITE_EVENT_MANAGER_ADDRESS
+      });
+      
+      // Execute the contract call
       writeContract({
-        args: [id],
+        args: [eventId],
         value: price,
       });
     } catch (error) {
@@ -358,6 +406,11 @@ function EventDetails() {
             <div className="text-center text-orange-600 p-3 bg-orange-50 rounded-lg">
               This event has ended
             </div>
+          )}
+          
+          {/* Ticket Preview Component */}
+          {event.isActive && !isEventEnded() && (
+            <TicketPreview event={event} />
           )}
           
           {/* Demo mode toggle - for development purposes only */}
