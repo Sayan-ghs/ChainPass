@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 import WalletConnect from './WalletConnect';
 import NetworkInfo from './NetworkInfo';
-import { ChainPassLogoBase64 } from '../assets/chainpass-logo';
+import { AnimatedChainPassLogo } from '../assets/ChainpassLogo.jsx';
 
 function Navbar() {
   const { address, isConnected } = useAccount();
@@ -56,14 +56,12 @@ function Navbar() {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
             <Link to="/" className="flex items-center group">
-              <div className="relative overflow-hidden">
-                <img 
-                  src={ChainPassLogoBase64} 
-                  alt="ChainPass" 
-                  className="h-10 w-auto mr-2 transition-transform duration-300 group-hover:scale-110" 
-                />
-                <div className="absolute inset-0 bg-blue-400 opacity-0 group-hover:opacity-10 rounded-full transition-opacity duration-300"></div>
-              </div>
+              <AnimatedChainPassLogo 
+                width="40px"
+                height="40px" 
+                className="mr-2"
+                id={`nav-logo-${scrolled ? 'scrolled' : 'top'}`}
+              />
               <div className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent group-hover:from-blue-700 group-hover:to-blue-500 transition-colors">
                 ChainPass
               </div>

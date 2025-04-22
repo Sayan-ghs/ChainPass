@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { generateTicketNFTMetadata } from '../utils/ticketNFTUtils';
 
 // Base logo for the chain display
@@ -12,6 +12,7 @@ const BaseLogoSmall = () => (
 
 const TicketPreview = ({ event }) => {
   const [expanded, setExpanded] = useState(false);
+  const [glowAnimation, setGlowAnimation] = useState(0);
   
   // Create a mock ticket for preview purposes
   const mockTicket = {
@@ -25,17 +26,38 @@ const TicketPreview = ({ event }) => {
   // Generate NFT metadata for the preview
   const metadata = generateTicketNFTMetadata(mockTicket, event);
   
+  // Add subtle animation effect
+  useEffect(() => {
+    let animationTimer;
+    if (expanded) {
+      let value = 0;
+      let direction = 1;
+      
+      animationTimer = setInterval(() => {
+        if (value >= 100) direction = -1;
+        if (value <= 0) direction = 1;
+        
+        value += direction * 1;
+        setGlowAnimation(value);
+      }, 100);
+    }
+    
+    return () => {
+      if (animationTimer) clearInterval(animationTimer);
+    };
+  }, [expanded]);
+  
   return (
     <div className="mt-8 border border-gray-200 rounded-lg overflow-hidden bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
-      <div className="bg-gradient-to-r from-blue-50 to-blue-100 px-4 py-3 border-b border-gray-200">
+      <div className="bg-gradient-to-r from-slate-50 via-blue-50 to-slate-50 px-4 py-3 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BaseLogoSmall />
-            <span className="font-medium text-gray-700">NFT Ticket Preview</span>
+            <span className="font-medium text-gray-700 tracking-tight">NFT Ticket Preview</span>
           </div>
           <button
             onClick={() => setExpanded(!expanded)}
-            className="text-blue-600 hover:text-blue-800 font-medium text-sm"
+            className="text-blue-600 hover:text-blue-800 font-medium text-sm px-3 py-1 rounded-full transition-all duration-300 hover:bg-blue-50"
           >
             {expanded ? "Hide Preview" : "Show Preview"}
           </button>
@@ -43,11 +65,25 @@ const TicketPreview = ({ event }) => {
       </div>
       
       {expanded && (
-        <div className="p-4">
-          <div className="flex flex-col md:flex-row gap-6">
+        <div className="p-4 relative overflow-hidden">
+          {/* Background Pattern */}
+          <div 
+            className="absolute inset-0 opacity-5"
+            style={{
+              backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%233b82f6' fill-opacity='0.15'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
+            }}
+          />
+          
+          <div className="flex flex-col md:flex-row gap-6 relative">
             {/* NFT Image */}
             <div className="w-full md:w-1/2">
-              <div className="aspect-square rounded-lg overflow-hidden shadow-md">
+              <div 
+                className="aspect-square rounded-lg overflow-hidden shadow-md transition-all duration-500"
+                style={{
+                  boxShadow: expanded ? `0 4px 20px rgba(59, 130, 246, ${0.1 + (glowAnimation / 500)})` : '0 4px 6px rgba(0, 0, 0, 0.1)',
+                  transform: `scale(${1 + (glowAnimation / 1000)})`,
+                }}
+              >
                 <img 
                   src={metadata.image} 
                   alt="NFT Ticket Preview" 
@@ -61,19 +97,22 @@ const TicketPreview = ({ event }) => {
               <h3 className="text-xl font-bold text-gray-800 mb-2">{metadata.name}</h3>
               <p className="text-gray-600 mb-4 text-sm">{metadata.description}</p>
               
-              <h4 className="text-sm font-semibold text-gray-500 uppercase mb-2">Properties</h4>
+              <h4 className="text-sm font-semibold text-gray-500 uppercase mb-2 tracking-wider">Properties</h4>
               <div className="grid grid-cols-2 gap-2 mb-4">
                 {metadata.attributes.map((attr, index) => (
-                  <div key={index} className="bg-blue-50 p-2 rounded-md">
-                    <p className="text-xs text-blue-500 uppercase font-medium">{attr.trait_type}</p>
-                    <p className="text-sm font-medium truncate">{attr.value}</p>
+                  <div 
+                    key={index} 
+                    className="bg-gradient-to-br from-blue-50 to-blue-100 p-2 rounded-md border border-blue-100 transition-all duration-300 hover:shadow-sm"
+                  >
+                    <p className="text-xs text-blue-500 uppercase font-medium tracking-wide">{attr.trait_type}</p>
+                    <p className="text-sm font-medium truncate text-gray-700">{attr.value}</p>
                   </div>
                 ))}
               </div>
               
-              <div className="mt-4 bg-gray-50 p-3 rounded-md border border-gray-100">
+              <div className="mt-4 bg-gradient-to-r from-amber-50 to-yellow-50 p-3 rounded-md border border-amber-100">
                 <div className="flex items-center">
-                  <svg className="w-5 h-5 text-yellow-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-5 h-5 text-amber-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                   </svg>
                   <p className="text-xs text-gray-600">
@@ -83,10 +122,10 @@ const TicketPreview = ({ event }) => {
               </div>
               
               {/* Blockchain Info */}
-              <div className="mt-4 flex items-center gap-2 text-xs text-gray-500">
+              <div className="mt-4 flex items-center gap-2 text-xs text-gray-500 bg-slate-50 px-3 py-2 rounded-full w-fit">
                 <BaseLogoSmall />
                 <span>Base Sepolia</span>
-                <span className="px-1">•</span>
+                <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
                 <span>ERC-721 NFT</span>
               </div>
             </div>

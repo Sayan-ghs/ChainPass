@@ -4,6 +4,7 @@ import { ethers } from 'ethers';
 import { useAccount, useContractRead, useContractWrite, useWaitForTransaction } from 'wagmi';
 import TicketPreview from '../components/TicketPreview';
 import { EventManagerABI } from '../contracts/EventManagerABI';
+import { useTransactions, TX_STATUS } from '../contexts/TransactionContext';
 
 function EventDetails() {
   const { id } = useParams();
@@ -14,6 +15,8 @@ function EventDetails() {
   const [buyingTicket, setBuyingTicket] = useState(false);
   const [insufficientFunds, setInsufficientFunds] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const { addTransaction, updateTransaction } = useTransactions();
+  const [currentTxId, setCurrentTxId] = useState(null);
 
   const { data: eventData, isError: isEventError, error: eventError } = useContractRead({
     address: import.meta.env.VITE_EVENT_MANAGER_ADDRESS,
@@ -23,10 +26,52 @@ function EventDetails() {
     enabled: !!id,
   });
 
-  const { write: writeContract, isLoading: isWriteLoading, isSuccess: isWriteSuccess, error: writeError } = useContractWrite({
+  const { 
+    write: writeContract, 
+    isLoading: isWriteLoading, 
+    isSuccess: isWriteSuccess, 
+    error: writeError,
+    data: writeData
+  } = useContractWrite({
     address: import.meta.env.VITE_EVENT_MANAGER_ADDRESS,
     abi: EventManagerABI,
     functionName: 'buyTicket',
+  });
+  
+  // Add transaction waiting functionality
+  const { 
+    isLoading: isConfirming, 
+    isSuccess: isConfirmed, 
+    error: confirmError 
+  } = useWaitForTransaction({
+    hash: writeData?.hash,
+    enabled: !!writeData?.hash,
+    onSuccess(data) {
+      // Update the transaction notification to success
+      if (currentTxId) {
+        updateTransaction(currentTxId, {
+          status: TX_STATUS.SUCCESS,
+          message: `Successfully purchased a ticket for "${event?.name}"`,
+          autoClose: true
+        });
+      }
+      
+      // Show success message
+      setBuyingTicket(false);
+    },
+    onError(error) {
+      // Update the transaction notification to error
+      if (currentTxId) {
+        updateTransaction(currentTxId, {
+          status: TX_STATUS.ERROR,
+          message: `Transaction failed: ${error.message}`,
+          autoClose: false
+        });
+      }
+      
+      setBuyingTicket(false);
+      console.error('Transaction confirmation error:', error);
+    }
   });
 
   // Check if we should enable demo mode (for development only)
@@ -80,9 +125,17 @@ function EventDetails() {
 
   // Handle transaction states
   useEffect(() => {
-    if (isWriteSuccess) {
-      setBuyingTicket(false);
-      alert('Ticket purchased successfully! It will be added to your account shortly.');
+    if (isWriteSuccess && writeData) {
+      // Create notification for pending transaction
+      const txId = addTransaction({
+        status: TX_STATUS.PENDING,
+        message: `Purchasing ticket for "${event?.name}"...`,
+        hash: writeData.hash,
+        autoClose: false
+      });
+      
+      setCurrentTxId(txId);
+      console.log('Transaction submitted:', writeData.hash);
     }
     
     if (writeError) {
@@ -91,51 +144,57 @@ function EventDetails() {
       
       // Check for different error types
       const errorMessage = writeError.message || '';
+      let notificationStatus = TX_STATUS.ERROR;
+      let notificationMessage = 'Transaction failed';
       
       if (errorMessage.includes('insufficient funds')) {
         setInsufficientFunds(true);
-        alert(
-          'Insufficient funds for this purchase.\n\n' +
-          `You need at least ${formatEth(event?.ticketPrice || 0)} ETH plus gas fees.\n\n` +
-          'Please add more funds to your wallet and try again.'
-        );
+        notificationMessage = `Insufficient funds for this purchase. You need at least ${formatEth(event?.ticketPrice || 0)} ETH plus gas fees.`;
       } else if (errorMessage.includes('user rejected transaction')) {
-        // User rejected in wallet - no need for alert
+        // User rejected in wallet
+        notificationStatus = TX_STATUS.REJECTED;
+        notificationMessage = 'Transaction was rejected in your wallet';
         console.log('User rejected the transaction');
       } else if (errorMessage.includes('transaction reverted')) {
         // Contract reverted - try to provide a more specific reason
-        let reason = 'The transaction was reverted by the smart contract.';
-        
         if (errorMessage.includes('sold out') || errorMessage.includes('maxTickets')) {
-          reason = 'This event is sold out. No more tickets are available.';
+          notificationMessage = 'This event is sold out. No more tickets are available.';
         } else if (errorMessage.includes('already purchased') || errorMessage.includes('already has a ticket')) {
-          reason = 'You already have a ticket for this event.';
+          notificationMessage = 'You already have a ticket for this event.';
         } else if (errorMessage.includes('event ended') || errorMessage.includes('not active')) {
-          reason = 'This event has ended or is not active.';
+          notificationMessage = 'This event has ended or is not active.';
         } else if (errorMessage.includes('incorrect amount') || errorMessage.includes('wrong amount') || errorMessage.includes('price')) {
-          reason = `The exact ticket price of ${formatEth(event?.ticketPrice || 0)} ETH must be sent.`;
+          notificationMessage = `The exact ticket price of ${formatEth(event?.ticketPrice || 0)} ETH must be sent.`;
+        } else {
+          notificationMessage = 'The transaction was reverted by the smart contract.';
         }
-        
-        alert(`Transaction Failed: ${reason}\n\nFor testing purposes, you can use demo mode by adding ?demo=true to the URL.`);
-      } else {
-        // Default error message
-        alert(`Transaction failed: ${errorMessage}\n\nTry using demo mode for testing.`);
       }
+      
+      // Add notification for the error
+      addTransaction({
+        status: notificationStatus,
+        message: notificationMessage,
+        autoClose: false
+      });
     }
-  }, [isWriteSuccess, writeError, event]);
+  }, [isWriteSuccess, writeData, writeError, event, addTransaction, updateTransaction]);
 
   const handleBuyTicket = async () => {
     if (!address) {
-      alert('Please connect your wallet to buy a ticket');
+      addTransaction({
+        status: TX_STATUS.ERROR,
+        message: 'Please connect your wallet to buy a ticket',
+        autoClose: true
+      });
       return;
     }
 
     if (insufficientFunds && !isDemoMode) {
-      alert(
-        'You likely have insufficient funds for this purchase.\n\n' +
-        `You need at least ${formatEth(event.ticketPrice)} ETH plus gas fees in your wallet.\n\n` +
-        'Please add more funds to your wallet and try again or use the demo mode for testing.'
-      );
+      addTransaction({
+        status: TX_STATUS.ERROR,
+        message: `You likely have insufficient funds for this purchase. You need at least ${formatEth(event.ticketPrice)} ETH plus gas fees.`,
+        autoClose: false
+      });
       return;
     }
     
@@ -149,6 +208,13 @@ function EventDetails() {
       if (isDemoMode) {
         setBuyingTicket(true);
         console.log('DEMO MODE: Simulating ticket purchase success');
+        
+        // Create notification for demo
+        const demoTxId = addTransaction({
+          status: TX_STATUS.PENDING,
+          message: `DEMO: Purchasing ticket for "${event?.name}"...`,
+          autoClose: false
+        });
         
         // Create a demo ticket with safe serialization of any BigInt values
         const demoTicket = {
@@ -185,7 +251,13 @@ function EventDetails() {
         // Simulate transaction delay
         setTimeout(() => {
           setBuyingTicket(false);
-          alert('DEMO MODE: Ticket purchased successfully! View it in My Tickets section.');
+          
+          // Update notification to success
+          updateTransaction(demoTxId, {
+            status: TX_STATUS.SUCCESS,
+            message: 'DEMO: Ticket purchased successfully! View it in My Tickets section.',
+            autoClose: true
+          });
         }, 2000);
         
         return;
@@ -198,43 +270,26 @@ function EventDetails() {
         `Would you like to continue?`
       );
       
-      if (!confirmPurchase) {
-        return;
-      }
+      if (!confirmPurchase) return;
       
+      // Set buying state
       setBuyingTicket(true);
       
-      // Ensure we have the correct eventId and price values
-      const eventId = Number(id);
-      
-      // Log the transaction details for debugging
-      console.log('Executing contract call with:', {
-        eventId,
-        price: price.toString(),
-        address: import.meta.env.VITE_EVENT_MANAGER_ADDRESS
-      });
-      
-      // Execute the contract call
+      // Execute the transaction
       writeContract({
-        args: [eventId],
-        value: price,
+        args: [id],
+        value: price
       });
-    } catch (error) {
-      console.error('Error buying ticket:', error);
+    } catch (err) {
+      console.error('Error initiating transaction:', err);
       setBuyingTicket(false);
       
-      // Check for specific error types
-      if (error.message && error.message.includes("insufficient funds")) {
-        alert(
-          'Insufficient funds for this purchase.\n\n' +
-          `You need at least ${formatEth(event.ticketPrice)} ETH plus gas fees in your wallet.\n\n` +
-          'Please add more funds to your wallet and try again.\n\n' +
-          'For testing purposes, you can use demo mode by adding ?demo=true to the URL.'
-        );
-        setInsufficientFunds(true);
-      } else {
-        alert('Failed to buy ticket: ' + error.message);
-      }
+      // Add notification for error
+      addTransaction({
+        status: TX_STATUS.ERROR,
+        message: `Error: ${err.message}`,
+        autoClose: false
+      });
     }
   };
 

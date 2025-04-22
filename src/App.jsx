@@ -10,11 +10,13 @@ import { CoinbaseWalletConnector } from 'wagmi/connectors/coinbaseWallet';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { initWalletKit } from './services/walletService';
 import { ChainPassLogoBase64 } from './assets/chainpass-logo';
+import { TransactionProvider } from './contexts/TransactionContext';
 
 // Components
 import Navbar from './components/Navbar';
 import NetworkBanner from './components/NetworkBanner';
 import NetworkCheck from './components/NetworkCheck';
+import Footer from './components/Footer';
 import Home from './pages/Home';
 import Events from './pages/Events';
 import CreateEvent from './pages/CreateEvent';
@@ -207,25 +209,28 @@ function App() {
     <ErrorBoundary>
       <WagmiConfig config={config}>
         <QueryClientProvider client={queryClient}>
-          <Router>
-            <NetworkCheck />
-            <div className="min-h-screen bg-gray-100">
-              <NetworkBanner />
-              <Navbar />
-              <main className="container mx-auto px-4 py-8">
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/events" element={<Events />} />
-                  <Route path="/events/create" element={<CreateEvent />} />
-                  <Route path="/events/:id" element={<EventDetails />} />
-                  <Route path="/my-tickets" element={<MyTickets />} />
-                  <Route path="/check-in/:eventId" element={<CheckIn />} />
-                  <Route path="/events/history" element={<EventHistory />} />
-                </Routes>
-              </main>
-              <EventTracker />
-            </div>
-          </Router>
+          <TransactionProvider>
+            <Router>
+              <NetworkCheck />
+              <div className="min-h-screen bg-gray-100">
+                <NetworkBanner />
+                <Navbar />
+                <main className="container mx-auto px-4 py-8">
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/events" element={<Events />} />
+                    <Route path="/events/create" element={<CreateEvent />} />
+                    <Route path="/events/:id" element={<EventDetails />} />
+                    <Route path="/my-tickets" element={<MyTickets />} />
+                    <Route path="/check-in/:eventId" element={<CheckIn />} />
+                    <Route path="/events/history" element={<EventHistory />} />
+                  </Routes>
+                </main>
+                <EventTracker />
+                <Footer />
+              </div>
+            </Router>
+          </TransactionProvider>
         </QueryClientProvider>
       </WagmiConfig>
     </ErrorBoundary>
