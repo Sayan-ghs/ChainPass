@@ -1,4 +1,5 @@
-![github-submission-banner](https://example.com/banner.jpg)
+![github-submission-banner](image.png)
+
 
 # 🚀 ChainPass
 
@@ -8,7 +9,7 @@
 
 ## 📌 Problem Statement
 
-**Problem Statement 7 – Transform the Future of Rural Commerce**
+**Problem Statement 4 – Creaft The Future Of Onchain Consumer Experience With Base**
 
 ChainPass addresses challenges in event ticketing and management by leveraging blockchain to create a secure, transparent system accessible to all communities.
 
@@ -24,21 +25,14 @@ By bringing blockchain technology to event management, we enable trustless verif
 
 ## 🧠 Team & Approach
 
-### Team Name:
+## Solo Developer 
+* Sayan Ghosh (GitHub: @Sayan-ghs / Role: Full-stack Developer)
 
-`ChainPassTeam`
+### My Approach:
 
-### Team Members:
-
-* Sayan (GitHub: @Sayan-ghs / Role: Full-stack Developer)
-* Member 2 (Role: Smart Contract Engineer)
-* Member 3 (Role: UI/UX Designer)
-
-### Our Approach:
-
-* We chose this problem because the ticketing industry suffers from fraud, lack of transparency, and high fees
+* I chose this problem because the ticketing industry suffers from fraud, lack of transparency, and high fees
 * Key challenges we addressed include on-chain verification, user-friendly wallet integration, and creating visually appealing NFT tickets
-* Our breakthrough was developing a modular smart contract architecture that allows for flexible event management with minimal gas costs
+* Breakthrough was developing a modular smart contract architecture that allows for flexible event management with minimal gas costs
 
 ---
 
@@ -55,7 +49,7 @@ By bringing blockchain technology to event management, we enable trustless verif
 ### Sponsor Technologies Used:
 
 * **Base:** ✅ OnchainKit for wallet integration & Smart Contract deployment
-* **Stellar:** Payment integration for ticket purchases
+*
 
 ---
 
@@ -68,22 +62,14 @@ By bringing blockchain technology to event management, we enable trustless verif
 * ✅ **Transaction Notifications** - Real-time feedback for all blockchain interactions
 
 <!-- Replace placeholder with actual logo once available -->
-![ChainPass Interface](https://via.placeholder.com/800x400?text=ChainPass+Interface)
+![ChainPass Interface](dist\ChainPassLogo.jpg)
 
 ---
 
 ## 📽️ Demo & Deliverables
 
-* **Demo Video Link:** [YouTube Demo](https://youtube.com/example)
-* **Pitch Deck Link:** [Presentation](https://slides.com/example)
-
----
-
-## ✅ Tasks & Bonus Checklist
-
-* ✅ **All members of the team completed the mandatory task** - Followed social channels and filled the form
-* ✅ **All members of the team completed Bonus Task 1** - Sharing of Badges
-* ✅ **All members of the team completed Bonus Task 2** - Signing up for Sprint.dev
+* **Demo Video Link:** [YouTube Demo](./)
+* **Pitch Deck Link:** [Presentation](./)
 
 ---
 
