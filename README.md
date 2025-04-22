@@ -49,7 +49,7 @@ By bringing blockchain technology to event management, we enable trustless verif
 ### Sponsor Technologies Used:
 
 * **Base:** ✅ OnchainKit for wallet integration & Smart Contract deployment
-*
+
 
 ---
 
@@ -62,7 +62,7 @@ By bringing blockchain technology to event management, we enable trustless verif
 * ✅ **Transaction Notifications** - Real-time feedback for all blockchain interactions
 
 <!-- Replace placeholder with actual logo once available -->
-![ChainPass Interface](dist\ChainPassLogo.jpg)
+![ChainPass Interface](dist/ChainPassLogo.jpg)
 
 ---
 
