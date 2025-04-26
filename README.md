@@ -67,9 +67,9 @@ By bringing blockchain technology to event management, we enable trustless verif
 ---
 
 ## 📽️ Demo & Deliverables
-
-* **Demo Video Link:** [YouTube Demo](./)
-* **Pitch Deck Link:** [Presentation](./)
+  
+  **Demo Video Link:** [YouTube Demo](./)
+  **Pitch Deck Link:** [Presentation](./)
 
 ---
 
